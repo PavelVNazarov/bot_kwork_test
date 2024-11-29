@@ -1,14 +1,17 @@
 # handlers.py
 from telegram import Update
 from telegram.ext import CallbackContext
+from subscription import check_subscription
+from exercises import show_exercises
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Добро пожаловать! Пожалуйста, проверьте свою подписку.")
+def start_handler(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if check_subscription(user_id):
+        update.message.reply_text("Добро пожаловать! Выберите упражнение.")
+        # Здесь можно вызвать функцию для отображения меню
+    else:
+        update.message.reply_text("Пожалуйста, подпишитесь на наш канал.")
 
-def check_subscription(update: Update, context: CallbackContext):
-    # Логика проверки подписки
-    update.message.reply_text("Проверка подписки...")
-
-def exercise_selection(update: Update, context: CallbackContext):
-    # Логика выбора упражнений
-    update.message.reply_text("Выберите категорию упражнений.")
+def exercise_handler(update: Update, context: CallbackContext):
+    # Логика выбора упражнения
+    show_exercises(update)
