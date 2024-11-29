@@ -1,3 +1,14 @@
+   
+# /telegram_bot/
+# │
+# ├── bot.py                # Основной файл бота
+# ├── config.py             # Файл конфигурации с токеном
+# ├── handlers.py           # Обработчики команд и сообщений
+# ├── subscription.py       # Логика проверки подписки
+# ├── exercises.py          # Логика работы с упражнениями
+# ├── video_manager.py
+# └── requirements.txt
+        
 # subscription.py
 from telegram import Bot
 from config import CHANNEL_ID
