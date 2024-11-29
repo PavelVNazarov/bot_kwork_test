@@ -183,3 +183,102 @@ handlers.py: Обработчики команд, включая проверк�
 subscription.py: Логика проверки подписки на канал.
 exercises.py: Логика работы с категориями упражнений и получением видео.
 video_manager.py: Функция для добавления видео в категории, которую можно расширить в будущем.
+
+
+# config.py
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+CHANNEL_ID = '@your_channel_id'  # ID Вашего канала
+
+# video_manager.py
+import json
+
+VIDEO_DATA_FILE = 'videos.json'
+
+def load_videos():
+    try:
+        with open(VIDEO_DATA_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+def save_video(category, exercise, video_url):
+    videos = load_videos()
+    if category not in videos:
+        videos[category] = {}
+    videos[category][exercise] = video_url
+    with open(VIDEO_DATA_FILE, 'w') as f:
+        json.dump(videos, f)
+
+def get_video(category, exercise):
+    videos = load_videos()
+    return videos.get(category, {}).get(exercise)
+
+# subscription.py
+import requests
+from config import CHANNEL_ID
+
+def check_subscription(user_id):
+    url = f'https://api.telegram.org/bot{TOKEN}/getChatMember?chat_id={CHANNEL_ID}&user_id={user_id}'
+    response = requests.get(url)
+    return response.json().get('result', {}).get('status') == 'member'
+
+# handlers.py
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext
+from video_manager import get_video
+from subscription import check_subscription
+
+def start(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    if not check_subscription(user_id):
+        update.message.reply_text("Пожалуйста, подпишитесь на наш канал, чтобы получить доступ к материалам.")
+        return
+    show_main_menu(update)
+
+def show_main_menu(update: Update):
+    keyboard = [
+        [InlineKeyboardButton("Выбор упражнения", callback_data='select_exercise')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Добро пожаловать! Выберите опцию:', reply_markup=reply_markup)
+
+def select_exercise(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton("Спина", callback_data='back')],
+        [InlineKeyboardButton("Руки", callback_data='arms')],
+        [InlineKeyboardButton("Грудь", callback_data='chest')],
+        [InlineKeyboardButton("Ноги", callback_data='legs')],
+        [InlineKeyboardButton("Плечи", callback_data='shoulders')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.callback_query.edit_message_text('Выберите категорию упражнений:', reply_markup=reply_markup)
+
+def show_exercise_video(update: Update, context: CallbackContext):
+    category = update.callback_query.data
+    exercise = context.user_data.get('selected_exercise')
+    video_url = get_video(category, exercise)
+    if video_url:
+        update.callback_query.edit_message_text(f'Вот видео для {exercise}: {video_url}')
+    else:
+        update.callback_query.edit_message_text('Видео не найдено.')
+
+# bot.py
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from config import TOKEN
+
+def main():
+    updater = Updater(TOKEN)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CallbackQueryHandler(select_exercise, pattern='select_exercise'))
+    dp.add_handler(CallbackQueryHandler(show_exercise_video, pattern='^(back|arms|chest|legs|shoulders)$'))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
+
+
