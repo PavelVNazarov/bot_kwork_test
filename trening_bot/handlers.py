@@ -3,56 +3,32 @@ from aiogram import Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher import filters
-from aiogram.dispatcher import FSMContext
-from aiogram.utils import executor
 from subscription import check_subscription
 from exercises import get_exercise_categories, get_exercise_video
-from aiogram import Bot
+from config import CHANNEL_ID
 
-# Инициализация бота и диспетчера
-from config import TOKEN
+async def start_command(message: types.Message):
+    await message.answer("Привет! Пожалуйста, подпишитесь на наш канал: " + CHANNEL_ID)
 
-bot = Bot(token=TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+async def choose_exercise(message: types.Message):
+    categories = get_exercise_categories()
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    for category in categories:
+        keyboard.add(category)
+    await message.answer("Выберите категорию упражнений:", reply_markup=keyboard)
 
-# Состояния для FSM
-class Form:
-    category = "category"
-    exercise = "exercise"
+async def handle_category_selection(message: types.Message):
+    category = message.text
+    # Здесь можно добавить логику выбора конкретного упражнения
+    await message.answer(f"Вы выбрали категорию: {category}. Теперь выберите упражнение.")
 
-@dp.message_handler(commands=['start'])
-async def cmd_start(message: types.Message):
-    if await check_subscription(message.from_user.id):
-        await message.answer("Добро пожаловать! Выберите упражнение:", reply_markup=await get_exercise_categories())
-    else:
-        await message.answer("Пожалуйста, подпишитесь на наш канал, чтобы получить доступ к материалам.")
+async def handle_exercise_selection(message: types.Message):
+    # Здесь должна быть логика получения видео по выбранному упражнению
+    video_url = get_exercise_video("Спина", "Тяга")  # Пример
+    await message.answer(f"Вот видео: {video_url}")
 
-@dp.callback_query_handler(lambda c: c.data == 'select_exercise')
-async def process_select_exercise(callback_query: types.CallbackQuery):
-    await bot.answer_callback_query(callback_query.id)
-    await Form.category.set()
-    await callback_query.message.answer("Выберите категорию упражнений:", reply_markup=await get_exercise_categories())
-
-@dp.callback_query_handler(lambda c: c.data in ['back'], state='*')
-async def process_back(callback_query: types.CallbackQuery, state: FSMContext):
-    await state.finish()
-    await bot.answer_callback_query(callback_query.id)
-    await callback_query.message.answer("Вы вернулись в главное меню.")
-
-@dp.callback_query_handler(lambda c: c.data in ['spine', 'arms', 'chest', 'legs', 'shoulders'], state=Form.category)
-async def process_category(callback_query: types.CallbackQuery, state: FSMContext):
-    await Form.exercise.set()
-    await bot.answer_callback_query(callback_query.id)
-    exercises = await get_exercise_video(callback_query.data)
-    await callback_query.message.answer(f"Выберите упражнение из категории {callback_query.data}:", reply_markup=exercises)
-
-@dp.callback_query_handler(state=Form.exercise)
-async def process_exercise(callback_query: types.CallbackQuery, state: FSMContext):
-    video_url = await get_exercise_video(callback_query.data)
-    await bot.answer_callback_query(callback_query.id)
-    await callback_query.message.answer(f"Вот видео с упражнением: {video_url}")
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
-
+def register_handlers(dp: Dispatcher):
+    dp.register_message_handler(start_command, commands=['start'])
+    dp.register_message_handler(choose_exercise, filters.Text(equals='Выбор упражнения'))
+    dp.register_message_handler(handle_category_selection)
+    dp.register_message_handler(handle_exercise_selection)
