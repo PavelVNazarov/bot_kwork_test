@@ -1,0 +1,70 @@
+Нужно подготовить vps (установить нужные библиотеки) в последствии установить бота телеграм на сервер и убедиться в его работоспособности.
+
+ИИ: Учим Python
+Для подготовки VPS и установки Telegram-бота, следуй этим шагам:
+
+Шаг 1: Подготовка VPS
+Подключись к своему VPS:
+Используй SSH для подключения к серверу. В терминале введи:
+
+ssh username@your_vps_ip
+
+Обнови систему:
+Убедись, что все пакеты обновлены:
+
+sudo apt update && sudo apt upgrade -y
+Установи Python и pip:
+Убедись, что Python и pip установлены:
+
+sudo apt install python3 python3-pip -y
+Установи необходимые библиотеки:
+Установи библиотеки для работы с Telegram API:
+
+pip3 install python-telegram-bot
+
+Шаг 2: Установка Telegram-бота
+Создай файл для бота:
+Создай новый файл, например bot.py:
+
+
+nano bot.py
+
+Напиши код бота:
+Вставь следующий код в файл bot.py:
+
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
+
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text('Привет! Я Ваш бот.')
+
+def main() -> None:
+    updater = Updater("YOUR_TOKEN_HERE")
+
+    updater.dispatcher.add_handler(CommandHandler("start", start))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
+
+Замените YOUR_TOKEN_HERE на токен Вашего бота, который Вы получили от @BotFather.
+
+Запусти бота:
+В терминале запусти бота:
+
+python3 bot.py
+
+Шаг 3: Проверка работоспособности
+Проверь бота в Telegram: Открой Telegram и найди своего бота по имени. Напиши команду /start и убедись, что бот отвечает.
+
+Дополнительные шаги
+Настройка автозапуска: Чтобы бот автоматически запускался при перезагрузке сервера, можно использовать systemd или screen.
+Безопасность: Убедись, что твой VPS защищен, настрой брандмауэр и обновляй систему регулярно.
+
+Терминал, о котором идет речь, обычно относится к командной строке или оболочке, используемой для взаимодействия с операционной системой Вашего VPS (Virtual Private Server). Это может быть:
+
+SSH (Secure Shell): Используется для удаленного доступа к серверу. Вы можете подключиться к Вашему VPS через SSH-клиент, такой как PuTTY (для Windows) или встроенный терминал (для Linux и macOS).
+
+Локальный терминал: Если Вы работаете на локальной машине, Вы можете использовать терминал Вашей операционной системы (например, Terminal на macOS или Linux, Command Prompt или PowerShell на Windows).
